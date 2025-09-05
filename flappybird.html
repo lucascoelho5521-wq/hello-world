@@ -8,10 +8,17 @@
     </style>
 </head>
 <body>
-<canvas id="game" width="400" height="600"></canvas>
+<canvas id="game"></canvas>
 <script>
 const canvas = document.getElementById('game');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 const ctx = canvas.getContext('2d');
+
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
 
 let bird = { x: 50, y: 300, width: 30, height: 30, velocity: 0, gravity: 0.5, jump: -8 };
 let pipes = [];
@@ -19,9 +26,17 @@ let score = 0;
 let gameOver = false;
 let pipeSpeed = 2;
 
+const birdImg = new Image();
+birdImg.src = 'https://raw.githubusercontent.com/sourabhv/FlapPyBird/master/assets/sprites/yellowbird-midflap.png';
+
 function drawBird() {
-    ctx.fillStyle = 'blue';
-    ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
+    // Calculate tilt angle based on velocity
+    let angle = Math.min(Math.max(bird.velocity * 6, -60), 120) * Math.PI / 180; // More tilt: clamp between -60deg and 120deg
+    ctx.save();
+    ctx.translate(bird.x + bird.width / 2, bird.y + bird.height / 2);
+    ctx.rotate(angle);
+    ctx.drawImage(birdImg, -bird.width / 2, -bird.height / 2, bird.width, bird.height);
+    ctx.restore();
 }
 
 function drawPipes() {
@@ -32,7 +47,6 @@ function drawPipes() {
     });
 }
 
-// ...existing code...
 function drawGround() {
     // Draw green ground
     ctx.fillStyle = '#5ee270';
@@ -66,14 +80,32 @@ function resetGame() {
 }
 
 function update() {
-    if (gameOver) return;
+    if (gameOver) {
+        // When dead, keep applying gravity so bird falls
+        bird.velocity += bird.gravity;
+        bird.y += bird.velocity;
+        // Bounce off the ground
+        if (bird.y + bird.height > canvas.height) {
+            bird.y = canvas.height - bird.height;
+            bird.velocity = -bird.velocity * 0.7; // Increase bounce height
+            // Stop bouncing if velocity is very small
+            if (Math.abs(bird.velocity) < 1) {
+                bird.velocity = 0;
+            }
+        }
+        return;
+    }
     bird.velocity += bird.gravity;
     bird.y += bird.velocity;
 
     // Add pipes
-    if (pipes.length === 0 || pipes[pipes.length - 1].x < 200) {
+    if (pipes.length === 0) {
         let top = Math.random() * 300 + 50;
-        let bottom = canvas.height - top - 250; // taller gap
+        let bottom = canvas.height - top - 150;
+        pipes.push({ x: canvas.width / 2, width: 50, top: top, bottom: bottom });
+    } else if (pipes[pipes.length - 1].x < 80) { // Lower value = more frequent pipes
+        let top = Math.random() * 300 + 50;
+        let bottom = canvas.height - top - 150;
         pipes.push({ x: canvas.width, width: 50, top: top, bottom: bottom });
     }
 
@@ -99,7 +131,7 @@ function update() {
     });
 
     // Ground/ceiling collision
-    if (bird.y < 0 || bird.y + bird.height > canvas.height) {
+    if (bird.y + bird.height > canvas.height) {
         gameOver = true;
     }
 }
