@@ -17,6 +17,7 @@ let bird = { x: 50, y: 300, width: 30, height: 30, velocity: 0, gravity: 0.5, ju
 let pipes = [];
 let score = 0;
 let gameOver = false;
+let pipeSpeed = 2;
 
 function drawBird() {
     ctx.fillStyle = 'blue';
@@ -43,6 +44,7 @@ function resetGame() {
     pipes = [];
     score = 0;
     gameOver = false;
+    pipeSpeed = 2;
 }
 
 function update() {
@@ -53,17 +55,18 @@ function update() {
     // Add pipes
     if (pipes.length === 0 || pipes[pipes.length - 1].x < 200) {
         let top = Math.random() * 300 + 50;
-        let bottom = canvas.height - top - 150;
+        let bottom = canvas.height - top - 250; // taller gap
         pipes.push({ x: canvas.width, width: 50, top: top, bottom: bottom });
     }
 
     // Move pipes
-    pipes.forEach(pipe => pipe.x -= 2);
+    pipes.forEach(pipe => pipe.x -= pipeSpeed);
 
     // Remove off-screen pipes
     if (pipes[0].x + pipes[0].width < 0) {
         pipes.shift();
         score++;
+        pipeSpeed += 0.2; // Increase speed each point
     }
 
     // Collision detection
@@ -116,3 +119,4 @@ document.addEventListener('keydown', function(e) {
 loop();
 </script>
 </body>
+</html>
