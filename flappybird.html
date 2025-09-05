@@ -8,7 +8,7 @@
     </style>
 </head>
 <body>
-<canvas id="game" width="600" height="700"></canvas>
+<canvas id="game" width="400" height="600"></canvas>
 <script>
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -31,6 +31,24 @@ function drawPipes() {
     });
 }
 
+// ...existing code...
+function drawGround() {
+    // Draw green ground
+    ctx.fillStyle = '#5ee270';
+    ctx.fillRect(0, canvas.height - 60, canvas.width, 60);
+
+    // Draw clouds on ground (closer together)
+    for (let i = 0; i < canvas.width; i += 60) {
+        ctx.beginPath();
+        ctx.arc(i + 20, canvas.height - 30, 25, Math.PI, 2 * Math.PI);
+        ctx.arc(i + 35, canvas.height - 30, 30, Math.PI, 2 * Math.PI);
+        ctx.arc(i + 50, canvas.height - 30, 20, Math.PI, 2 * Math.PI);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+    }
+
+    // }
+}
 function drawScore() {
     ctx.fillStyle = 'black';
     ctx.font = '24px Arial';
@@ -85,7 +103,8 @@ function update() {
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawBird();
+    drawBird();    
+    drawGround(); // <-- Add this line
     drawPipes();
     drawScore();
     if (gameOver) {

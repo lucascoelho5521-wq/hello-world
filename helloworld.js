@@ -5,7 +5,7 @@ for (let i = 0; i < 1001; i++) {
 }
 // ...existing code...
 let count = 0;
-while (count < 1000000) {
+while (count < 50001) {
     console.log("While loop count:", count);
     count++;
 }
