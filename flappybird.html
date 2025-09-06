@@ -23,11 +23,19 @@ window.addEventListener('resize', () => {
 let bird = { x: 50, y: 300, width: 30, height: 30, velocity: 0, gravity: 0.5, jump: -8 };
 let pipes = [];
 let score = 0;
+let highScore = 0;
 let gameOver = false;
 let pipeSpeed = 2;
+let paused = false;
 
 const birdImg = new Image();
 birdImg.src = 'https://raw.githubusercontent.com/sourabhv/FlapPyBird/master/assets/sprites/yellowbird-midflap.png';
+const bgImg = new Image();
+bgImg.src = 'https://raw.githubusercontent.com/sourabhv/FlapPyBird/master/assets/sprites/background-day.png';
+let bgLoaded = false;
+bgImg.onload = function() { bgLoaded = true; };
+
+const flapSound = new Audio('https://raw.githubusercontent.com/sourabhv/FlapPyBird/master/assets/audio/wing.wav');
 
 function drawBird() {
     // Calculate tilt angle based on velocity
@@ -52,25 +60,45 @@ function drawGround() {
     ctx.fillStyle = '#5ee270';
     ctx.fillRect(0, canvas.height - 60, canvas.width, 60);
 
-    // Draw clouds on ground (closer together)
-    for (let i = 0; i < canvas.width; i += 60) {
+    // Draw more clouds on ground (lower)
+    for (let i = 0; i < canvas.width; i += 30) {
         ctx.beginPath();
-        ctx.arc(i + 20, canvas.height - 30, 25, Math.PI, 2 * Math.PI);
-        ctx.arc(i + 35, canvas.height - 30, 30, Math.PI, 2 * Math.PI);
-        ctx.arc(i + 50, canvas.height - 30, 20, Math.PI, 2 * Math.PI);
+        ctx.arc(i + 10, canvas.height - 10, 25, Math.PI, 2 * Math.PI);
+        ctx.arc(i + 18, canvas.height - 10, 30, Math.PI, 2 * Math.PI);
+        ctx.arc(i + 25, canvas.height - 10, 20, Math.PI, 2 * Math.PI);
         ctx.fillStyle = '#ffffff';
         ctx.fill();
     }
-
-    // }
 }
+
+// Score font and color for OG look
 function drawScore() {
-    ctx.fillStyle = 'black';
-    ctx.font = '24px Arial';
-    ctx.fillText('Score: ' + score, 10, 30);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 40px "Courier New", Courier, monospace';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 4;
+    ctx.strokeText(score, canvas.width / 2, 80);
+    ctx.fillText(score, canvas.width / 2, 80);
+    ctx.font = 'bold 24px "Courier New", Courier, monospace';
+    ctx.strokeText('High: ' + highScore, 20, 40);
+    ctx.fillText('High: ' + highScore, 20, 40);
+}
+
+function drawBackground() {
+    if (bgLoaded && bgImg.width > 0) {
+        for (let x = 0; x < canvas.width; x += bgImg.width) {
+            ctx.drawImage(bgImg, x, 0, bgImg.width, canvas.height);
+        }
+    } else {
+        ctx.fillStyle = '#70c5ce'; // fallback color
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
 }
 
 function resetGame() {
+    if (score > highScore) {
+        highScore = score;
+    }
     bird.y = 300;
     bird.velocity = 0;
     pipes = [];
@@ -81,14 +109,11 @@ function resetGame() {
 
 function update() {
     if (gameOver) {
-        // When dead, keep applying gravity so bird falls
         bird.velocity += bird.gravity;
         bird.y += bird.velocity;
-        // Bounce off the ground
         if (bird.y + bird.height > canvas.height) {
             bird.y = canvas.height - bird.height;
-            bird.velocity = -bird.velocity * 0.7; // Increase bounce height
-            // Stop bouncing if velocity is very small
+            bird.velocity = -bird.velocity * 0.7;
             if (Math.abs(bird.velocity) < 1) {
                 bird.velocity = 0;
             }
@@ -126,6 +151,9 @@ function update() {
             bird.x + bird.width > pipe.x &&
             (bird.y < pipe.top || bird.y + bird.height > canvas.height - pipe.bottom)
         ) {
+            if (score > highScore) {
+                highScore = score;
+            }
             gameOver = true;
         }
     });
@@ -138,32 +166,51 @@ function update() {
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawBird();    
-    drawGround(); // <-- Add this line
+    drawBackground();
+    drawBird();
     drawPipes();
+    drawGround();
     drawScore();
     if (gameOver) {
         ctx.fillStyle = 'red';
-        ctx.font = '48px Arial';
-        ctx.fillText('Game Over', 80, 300);
-        ctx.font = '24px Arial';
-        ctx.fillText('Press Space to Restart', 90, 350);
+        ctx.font = 'bold 48px "Courier New", Courier, monospace';
+        ctx.fillText('Game Over', canvas.width / 2 - 140, canvas.height / 2 - 40);
+        ctx.font = 'bold 24px "Courier New", Courier, monospace';
+        ctx.fillText('Press Space to Restart', canvas.width / 2 - 140, canvas.height / 2);
+    }
+    if (paused && !gameOver) {
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 48px "Courier New", Courier, monospace';
+        ctx.fillText('Paused', canvas.width / 2 - 90, canvas.height / 2 - 40);
+        ctx.font = 'bold 24px "Courier New", Courier, monospace';
+        ctx.fillText('Press P to Resume', canvas.width / 2 - 110, canvas.height / 2);
+        ctx.font = 'bold 32px "Courier New", Courier, monospace';
+        ctx.fillText('High Score: ' + highScore, canvas.width / 2 - 110, canvas.height / 2 + 50);
     }
 }
 
 function loop() {
-    update();
+    if (!paused) {
+        update();
+    }
     draw();
     requestAnimationFrame(loop);
 }
 
 document.addEventListener('keydown', function(e) {
     if (e.code === 'Space') {
+        flapSound.currentTime = 0;
+        flapSound.play();
         if (gameOver) {
             resetGame();
-        } else {
+        } else if (!paused) {
             bird.velocity = bird.jump;
         }
+    }
+    if (e.code === 'KeyP') {
+        paused = !paused;
     }
 });
 
