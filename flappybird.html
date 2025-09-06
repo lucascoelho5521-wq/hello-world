@@ -28,8 +28,17 @@ let gameOver = false;
 let pipeSpeed = 2;
 let paused = false;
 
-const birdImg = new Image();
-birdImg.src = 'https://raw.githubusercontent.com/sourabhv/FlapPyBird/master/assets/sprites/yellowbird-midflap.png';
+const birdImgs = [
+  new Image(), // midflap
+  new Image(), // upflap
+  new Image()  // downflap
+];
+birdImgs[0].src = 'https://raw.githubusercontent.com/sourabhv/FlapPyBird/master/assets/sprites/yellowbird-midflap.png';
+birdImgs[1].src = 'https://raw.githubusercontent.com/sourabhv/FlapPyBird/master/assets/sprites/yellowbird-upflap.png';
+birdImgs[2].src = 'https://raw.githubusercontent.com/sourabhv/FlapPyBird/master/assets/sprites/yellowbird-downflap.png';
+let birdFrame = 0;
+let birdFrameCount = 0;
+
 const bgImg = new Image();
 bgImg.src = 'https://raw.githubusercontent.com/sourabhv/FlapPyBird/master/assets/sprites/background-day.png';
 let bgLoaded = false;
@@ -38,12 +47,17 @@ bgImg.onload = function() { bgLoaded = true; };
 const flapSound = new Audio('https://raw.githubusercontent.com/sourabhv/FlapPyBird/master/assets/audio/wing.wav');
 
 function drawBird() {
+    // Animate bird wings
+    birdFrameCount++;
+    if (birdFrameCount % 6 === 0) {
+        birdFrame = (birdFrame + 1) % birdImgs.length;
+    }
     // Calculate tilt angle based on velocity
     let angle = Math.min(Math.max(bird.velocity * 6, -60), 120) * Math.PI / 180; // More tilt: clamp between -60deg and 120deg
     ctx.save();
     ctx.translate(bird.x + bird.width / 2, bird.y + bird.height / 2);
     ctx.rotate(angle);
-    ctx.drawImage(birdImg, -bird.width / 2, -bird.height / 2, bird.width, bird.height);
+    ctx.drawImage(birdImgs[birdFrame], -bird.width / 2, -bird.height / 2, bird.width, bird.height);
     ctx.restore();
 }
 
@@ -74,14 +88,12 @@ function drawGround() {
 // Score font and color for OG look
 function drawScore() {
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 40px "Courier New", Courier, monospace';
+    ctx.font = 'bold 40px "Press Start 2P", "Courier New", Courier, monospace';
     ctx.strokeStyle = '#000';
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 6;
     ctx.strokeText(score, canvas.width / 2, 80);
     ctx.fillText(score, canvas.width / 2, 80);
-    ctx.font = 'bold 24px "Courier New", Courier, monospace';
-    ctx.strokeText('High: ' + highScore, 20, 40);
-    ctx.fillText('High: ' + highScore, 20, 40);
+    // Removed high score from main screen
 }
 
 function drawBackground() {
@@ -172,23 +184,55 @@ function draw() {
     drawGround();
     drawScore();
     if (gameOver) {
-        ctx.fillStyle = 'red';
-        ctx.font = 'bold 48px "Courier New", Courier, monospace';
-        ctx.fillText('Game Over', canvas.width / 2 - 140, canvas.height / 2 - 40);
-        ctx.font = 'bold 24px "Courier New", Courier, monospace';
-        ctx.fillText('Press Space to Restart', canvas.width / 2 - 140, canvas.height / 2);
+        ctx.fillStyle = '#ffcc00';
+        ctx.font = 'bold 56px "Press Start 2P", "Courier New", Courier, monospace';
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 8;
+        ctx.strokeText('Game Over', canvas.width / 2 - 180, canvas.height / 2 - 40);
+        ctx.fillText('Game Over', canvas.width / 2 - 180, canvas.height / 2 - 40);
+        ctx.font = 'bold 28px "Press Start 2P", "Courier New", Courier, monospace';
+        ctx.strokeText('Press Space to Restart', canvas.width / 2 - 220, canvas.height / 2 + 20);
+        ctx.fillText('Press Space to Restart', canvas.width / 2 - 220, canvas.height / 2 + 20);
     }
     if (paused && !gameOver) {
         ctx.fillStyle = 'rgba(0,0,0,0.5)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 48px "Courier New", Courier, monospace';
-        ctx.fillText('Paused', canvas.width / 2 - 90, canvas.height / 2 - 40);
-        ctx.font = 'bold 24px "Courier New", Courier, monospace';
-        ctx.fillText('Press P to Resume', canvas.width / 2 - 110, canvas.height / 2);
-        ctx.font = 'bold 32px "Courier New", Courier, monospace';
-        ctx.fillText('High Score: ' + highScore, canvas.width / 2 - 110, canvas.height / 2 + 50);
+        ctx.fillStyle = 'orange';
+        ctx.font = 'bold 48px "Press Start 2P", "Courier New", Courier, monospace';
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 8;
+        ctx.strokeText('Paused', canvas.width / 2 - 120, canvas.height / 2 - 40);
+        ctx.fillText('Paused', canvas.width / 2 - 120, canvas.height / 2 - 40);
+        ctx.font = 'bold 24px "Press Start 2P", "Courier New", Courier, monospace';
+        ctx.strokeText('Press P to Resume', canvas.width / 2 - 170, canvas.height / 2);
+        ctx.fillText('Press P to Resume', canvas.width / 2 - 170, canvas.height / 2);
+        ctx.font = 'bold 32px "Press Start 2P", "Courier New", Courier, monospace';
+        ctx.strokeText('High Score: ' + highScore, canvas.width / 2 - 170, canvas.height / 2 + 50);
+        ctx.fillText('High Score: ' + highScore, canvas.width / 2 - 170, canvas.height / 2 + 50);
     }
+}
+
+// Add pause button to HTML
+if (!document.getElementById('pauseBtn')) {
+    const pauseBtn = document.createElement('button');
+    pauseBtn.id = 'pauseBtn';
+    pauseBtn.innerHTML = '<span id="pauseIcon" style="font-family: \"Press Start 2P\", monospace; font-size: 20px;">&#9612;&#9612;</span>'; // Pixelated pause icon
+    pauseBtn.style.position = 'absolute';
+    pauseBtn.style.top = '20px';
+    pauseBtn.style.left = '20px';
+    pauseBtn.style.zIndex = '10';
+    pauseBtn.style.background = 'orange';
+    pauseBtn.style.color = '#fff';
+    pauseBtn.style.border = '3px solid #000';
+    pauseBtn.style.padding = '4px 10px';
+    pauseBtn.style.borderRadius = '8px';
+    pauseBtn.style.cursor = 'pointer';
+    pauseBtn.style.fontSize = '20px';
+    document.body.appendChild(pauseBtn);
+    pauseBtn.addEventListener('click', function() {
+        paused = !paused;
+        document.getElementById('pauseIcon').innerHTML = paused ? '<span style="font-family: \"Press Start 2P\", monospace;">&#9654;</span>' : '<span style="font-family: \"Press Start 2P\", monospace;">&#9612;&#9612;</span>';
+    });
 }
 
 function loop() {
@@ -201,16 +245,21 @@ function loop() {
 
 document.addEventListener('keydown', function(e) {
     if (e.code === 'Space') {
-        flapSound.currentTime = 0;
-        flapSound.play();
         if (gameOver) {
             resetGame();
         } else if (!paused) {
+            flapSound.currentTime = 0;
+            flapSound.play();
             bird.velocity = bird.jump;
         }
     }
-    if (e.code === 'KeyP') {
-        paused = !paused;
+});
+
+canvas.addEventListener('mousedown', function(e) {
+    if (!paused && !gameOver) {
+        flapSound.currentTime = 0;
+        flapSound.play();
+        bird.velocity = bird.jump;
     }
 });
 
